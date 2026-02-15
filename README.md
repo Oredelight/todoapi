@@ -1,70 +1,147 @@
-# Todoapi
+# TodoAPI
 
-A REST API for managing users and todos. Built with FastAPI, SQLAlchemy, and PostgreSQL, it provides user registration, a simple token-authentication endpoint (a stub for now), and full CRUD for todos with owner relationships. Intended as a compact starter for local development, testing, and extension.
+TodoAPI is a RESTful web service for managing users and their todo tasks. Built with FastAPI, SQLAlchemy, and PostgreSQL, it provides robust user authentication, secure password hashing, and full CRUD operations for todos. This project is ideal for learning, local development, and as a foundation for more advanced applications.
 
-**Key files**
-- [app.py](app.py#L1-L20): application entry, mounts routes and creates tables.
-- [handlers/routes.py](handlers/routes.py#L1-L200): API routes (users, auth token, todos).
-- [database/db.py](database/db.py#L1-L60): DB engine and `get_db()`.
-- [database/model.py](database/model.py#L1-L200): SQLAlchemy models for `User` and `Todos`.
+## Features
+- User registration and login with hashed passwords
+- JWT-based authentication (token generation)
+- CRUD operations for todos, linked to users
+- PostgreSQL database integration
+- Automatic table creation on startup
+- Clean, modular code structure
+
+## Project Structure
+
+- [app.py](app.py): Application entry point; initializes FastAPI, mounts routes, and creates tables.
+- [handlers/routes.py](handlers/routes.py): Defines all API endpoints for users, authentication, and todos.
+- [handlers/auth.py](handlers/auth.py): Handles JWT token creation and authentication logic.
+- [database/db.py](database/db.py): Sets up the database engine, session, and base model.
+- [database/model.py](database/model.py): SQLAlchemy models for `User` and `Todos` tables.
+- [database/schemas.py](database/schemas.py): Pydantic schemas for request/response validation.
+- [database/user.py](database/user.py): User-related database operations (create, get, delete, authenticate).
+- [database/todo.py](database/todo.py): Todo-related database operations (create, update, delete, get).
 
 ## Requirements
-- Python 3.10+ recommended
-- PostgreSQL database (the project uses a DATABASE_URL in `database/db.py`)
-- Install Python deps: `fastapi`, `uvicorn`, `sqlalchemy`, `psycopg2-binary`, `pydantic` (and any others you prefer)
+- Python 3.10 or higher
+- PostgreSQL database server
+- Recommended packages: `fastapi`, `uvicorn`, `sqlalchemy`, `psycopg2-binary`, `pydantic`, `python-jose`, `passlib`
+
 
 ## Quickstart (development)
 1. Create and activate a virtualenv:
-```bash
-python -m venv .venv
-# Windows PowerShell
-.\.venv\Scripts\Activate
-# cmd
-.\.venv\Scripts\activate
-```
+  ```bash
+  python -m venv .venv
+  # Windows PowerShell
+  .\.venv\Scripts\Activate
+  # cmd
+  .\.venv\Scripts\activate
+  ```
 2. Install dependencies:
-```bash
-pip install fastapi uvicorn sqlalchemy psycopg2-binary
-```
+  ```bash
+  pip install fastapi uvicorn sqlalchemy psycopg2-binary python-jose passlib pydantic
+  ```
 3. Configure the database in `database/db.py` by updating `DATABASE_URL` (example):
-```
-postgresql://<user>:<password>@<host>/<dbname>
-```
-4. Create the database in Postgres if it doesn't exist. The app will create tables automatically on startup (see [app.py](app.py#L1-L20)).
-5. Run the app:
-```bash
-uvicorn app:app --reload
-```
-The API will be available at `http://127.0.0.1:8000/docs`.
+  ```python
+  DATABASE_URL = "postgresql://<user>:<password>@<host>/<dbname>"
+  ```
+  Create the database in Postgres if it doesn't exist. The app will create tables automatically on startup.
+4. Run the app:
+  ```bash
+  uvicorn app:app --reload
+  ```
+  The API will be available at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
 
-## Important API endpoints (examples)
-- Create user
-  - POST `/Create User`
-  - Body: `UserCreate` (see `database/schemas.py`)
-  - Returns: `UserOut`
+## API Endpoints
 
-- Login (token)
-  - POST `/token`
-  - Form data: `username` (email), `password`
-  - Returns: simple success string (authentication hook present)
 
-- CRUD Todos
-  - POST `/Create Todo` — create todo (body: `TodoCreate`)
-  - PUT `/Update Todo` — update todo (query param `id`, body: `TodoCreate`)
-  - GET `/Get All Todos` — list all todos
-  - GET `/todo/{todo_id}` — get single todo
-  - DELETE `/todos/{todo_id}` — delete todo
-  - GET `/users/{owner_id}/todos` — todos for a user
 
-- Users
-  - GET `/users/{user_id}` — get user by id
-  - GET `/Get All Users` — list users
-  - DELETE `/users/{user_id}` — delete user
+### User Endpoints
 
-Note: Route names include spaces (as implemented) — keep exact paths when calling the API (e.g., `/Create Todo`).
+- **Register User**
+  - `POST /register_user`
+  - Request body: `{ "email": str, "username": str, "password": str (min 8 chars) }`
+  - Response: `{ "id": int, "email": str, "created_at": str }`
+
+- **Login**
+  - `POST /login`
+  - Request body: `{ "email": str, "password": str }`
+  - Response: `{ "access_token": str, "token_type": "bearer" }`
+
+- **Get User by ID**
+  - `GET /users/{user_id}`
+  - Response: `{ "id": int, "email": str, "created_at": str }`
+
+- **Get All Users**
+  - `GET /users`
+  - Response: List of users (`UserOut`)
+
+- **Delete User**
+  - `DELETE /users/{user_id}`
+  - Response: `{ "message": "User deleted succcessfully" }`
+
+- **Get Todos by User**
+  - `GET /users/{owner_id}/todos`
+  - Response: List of todos for the user (`TodoOut`)
+
+### Todo Endpoints
+
+- **Create Todo**
+  - `POST /create_todo`
+  - Request body: `{ "description": str, "status": str, "owner_id": int }`
+  - Response: `TodoOut`
+
+- **Update Todo**
+  - `PUT /update_todo/{todo_id}`
+  - Request body: `{ "description": str, "status": str, "owner_id": int }`
+  - Response: Updated `TodoOut`
+
+- **Get All Todos**
+  - `GET /todos`
+  - Response: List of `TodoOut`
+
+- **Get Todo by ID**
+  - `GET /todo/{todo_id}`
+  - Response: `TodoOut`
+
+- **Delete Todo**
+  - `DELETE /todos/{todo_id}`
+  - Response: `{ "message": "Todo deleted successfully" }`
+
+
+## Authentication
+- Passwords are securely hashed using `passlib` (bcrypt).
+- JWT tokens are generated for login using `python-jose`.
+- Endpoints are not protected by default, but you can extend the code to require authentication for sensitive routes.
+
 
 ## Database
-- Postgres is used (see `database/db.py`).
-- Tables are created automatically by `Base.metadata.create_all(bind=engine)` in `app.py`.
+- Uses PostgreSQL (configure in `database/db.py`).
+- Tables are created automatically on app startup via `Base.metadata.create_all(bind=engine)`.
+- Models:
+  - **User**: `id`, `username`, `email`, `hashed_password`, `created_at`
+  - **Todos**: `id`, `description`, `status`, `owner_id`, `created_at`, `updated_at`
 
+
+## Example Request Bodies
+
+**UserCreate**
+```json
+{
+  "email": "user@example.com",
+  "username": "user1",
+  "password": "yourpassword"
+}
+```
+
+**TodoCreate**
+```json
+{
+  "description": "Buy groceries",
+  "status": "pending",
+  "owner_id": 1
+}
+```
+  - Form data: `username` (email), `password`
+
+  - Returns: simple success string (authentication hook present)
 
